@@ -1,0 +1,225 @@
+import matplotlib.pyplot as plt
+from matplotlib.collections import PolyCollection
+class Task:
+    def __init__(self, name, T, C, f0, max_iter):
+        self.name = name
+        self.T = T
+        self.C = C
+        self.f0 = f0
+        self.computes = {}
+        for i in range(f0, max_iter, T):
+            self.computes.update({i: C})
+
+        print(self.computes)
+
+    def active(self, time) -> bool:
+        if time < self.f0:
+            return False
+        current_start = self.f0 + ((time - self.f0) // self.T) * self.T
+        return self.computes[current_start] > 0
+
+    def work(self, time) -> bool:
+        current_start = self.f0 + ((time - self.f0) // self.T) * self.T
+        self.computes[current_start] -= 1
+        return self.computes[current_start] > 0
+
+    def deadline(self, time) -> int:
+        deadline = self.f0
+        while deadline < time:
+            deadline += self.T
+        return deadline
+
+
+class Server(Task):
+    def __init__(self, name, T, f0):
+        super().__init__(name, T, 0, f0, 0)
+        self.computes = {
+            41: 6,
+            321: 6,
+            581: 6
+        }
+
+        self.deadline_map = {
+            41: 425,
+            321: 809,
+            581: 1193
+        }
+
+        print(self.computes)
+
+    def active(self, time) -> bool:
+        if time < self.f0:
+            return False
+        current_start = None
+        for k in self.computes.keys():
+            if k > time:
+                break
+            current_start = k
+            if self.computes[k] > 0:
+                break
+        if current_start is None:
+            return False
+        return self.computes[current_start] > 0
+
+    def work(self, time) -> bool:
+        current_start = None
+        for k in self.computes.keys():
+            if k > time:
+                break
+            current_start = k
+            if self.computes[k] > 0:
+                break
+        if current_start is None:
+            return False
+
+        self.computes[current_start] -= 1
+        return self.computes[current_start] > 0
+
+    def deadline(self, time) -> int:
+        current_start = None
+        for k in self.computes.keys():
+            if k > time:
+                break
+            current_start = k
+            if self.computes[k] > 0:
+                break
+        if current_start is None:
+            return time*10000
+        return self.deadline_map[current_start]
+
+
+if __name__ == '__main__':
+    max_iter = 1280
+    utemezes = 0
+    tasks = [
+        Task(" task1 ", 160, 40, 181, max_iter),
+        Task(" task2 ", 320, 60, 122, max_iter),
+        Task(" task3 ", 640, 80, 43, max_iter),
+        Task(" task4 ", 1280, 300, 4, max_iter),
+        Server("szerver", 1280, 0)
+    ]
+
+    futas = {
+        "utem 10": ['| ' if i % 10 == 0 else '  ' for i in range(max_iter)],
+        "utemezo": ['|x x x x x' if i % 40 == 0 else ' . . . . .' for i in range(0, max_iter, 5)],
+        " task1 ": ['|.' if i % 160 == 21 and i >= 181 else ' .' for i in range(max_iter)],
+        " task2 ": ['|.' if i % 320 == 122 else ' .' for i in range(max_iter)],
+        " task3 ": ['|.' if i % 640 == 43 else ' .' for i in range(max_iter)],
+        " task4 ": ['|.' if i % 1280 == 4 else ' .' for i in range(max_iter)],
+        "szerver": ['|.' if i == 41 or i == 321 or i == 581 else ' .' for i in range(max_iter)],
+        " ures  ": [' .' for i in range(max_iter)]
+    }
+
+    plot = {
+        "utemezo": [],
+        " task1 ": [],
+        " task2 ": [],
+        " task3 ": [],
+        " task4 ": [],
+        "szerver": [],
+        " ures  ": []
+    }
+
+    valtas = True
+    actual_task = None
+    ready_tasks = []
+    for t in range(0, max_iter, 1):
+        if t % 40 == 0:
+            utemezes = 5
+            plot["utemezo"].append([t, t + 5])
+            ready_tasks = []
+            for task in tasks:
+                if task.active(t):
+                    ready_tasks.append(task)
+            if len(ready_tasks) > 0:
+                valtas = True
+                ready_tasks.sort(key=lambda x: x.deadline(t))
+
+        if actual_task is not None:
+            if valtas:
+                plot[actual_task.name].append([t, t])
+                valtas = False
+            futas[actual_task.name][t] = ' 0'
+            plot[actual_task.name][-1][1] = t
+            if not actual_task.work(t):
+                ready_tasks[ready_tasks.index(actual_task)] = None
+                actual_task = None
+                valtas = True
+        else:
+            if valtas:
+                plot[" ures  "].append([t, t])
+                valtas = False
+            futas[" ures  "][t] = ' 0'
+            plot[" ures  "][-1][1] = t
+
+        if utemezes > 0:
+            utemezes -= 1
+            if utemezes == 0:
+                if len(ready_tasks) == 0:
+                    actual_task = None
+                elif ready_tasks[0] is None and len(ready_tasks) > 1:
+                    actual_task = ready_tasks[1]
+                else:
+                    actual_task = ready_tasks[0]
+                valtas = True
+
+    for f in futas.keys():
+        print(f, end="::")
+        for ff in futas[f]:
+            print(ff, end="")
+        print()
+
+    cats = {"utemezo": 1, " task1 ": 2, " task2 ": 3, " task3 ": 4, " task4 ": 5, "szerver":6, " ures  ": 7}
+    colormapping = {"utemezo": "C0", " task1 ": "C1", " task2 ": "C2", " task3 ": "C6", " task4 ": "C4", " ures  ": "C5", "szerver": "C7"}
+
+    a = 0
+    b = []
+    while a < len(plot[" ures  "]) - 1:
+        if plot[" ures  "][a][1] + 1 == plot[" ures  "][a+1][0]:
+            if len(b) == 0:
+                b = [plot[" ures  "][a][0], plot[" ures  "][a+1][1]]
+            else:
+                b[1] = plot[" ures  "][a+1][1]
+        else:
+            print(b)
+            b = []
+        a += 1
+    print(b if len(b) > 0 else plot[" ures  "][-1])
+
+    print("--------------------------------------")
+    verts = []
+    colors = []
+    for name in plot.keys():
+        print(name)
+        for d in plot[name]:
+            print(f"{d[0] / 10}, {d[1] / 10 + 0.1}")
+            v = [(d[0], cats[name] - .4),
+                 (d[0], cats[name] + .4),
+                 (d[1], cats[name] + .4),
+                 (d[1], cats[name] - .4),
+                 (d[0], cats[name] - .4)]
+            verts.append(v)
+            colors.append(colormapping[name])
+    print("--------------------------------------")
+
+    for task in tasks:
+        print(task.computes)
+        for t in task.computes.keys():
+            v = [(t-1, cats[task.name] - .4),
+                 (t-1, cats[task.name] + .4),
+                 (t+1, cats[task.name] + .4),
+                 (t+1, cats[task.name] - .4),
+                 (t-1, cats[task.name] - .4)]
+            verts.append(v)
+            colors.append("C3")
+
+    bars = PolyCollection(verts, facecolors=colors)
+
+    fig, ax = plt.subplots()
+    ax.add_collection(bars)
+    ax.autoscale()
+    plt.grid(color='black', linestyle='-', linewidth=0.5, axis="x")
+
+    ax.set_yticks([1, 2, 3, 4, 5, 6, 7])
+    ax.set_yticklabels(["utemezo", "task1", "task2", "task3", "task4", "szerver", "ures"])
+    plt.show()
