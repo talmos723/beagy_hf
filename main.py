@@ -29,10 +29,10 @@ if __name__ == '__main__':
     max_iter = 1280
     utemezes = 0
     tasks = [
-        Task(" task1 ", 160, 40, 0, max_iter),
-        Task(" task2 ", 320, 80, 0, max_iter),
-        Task(" task3 ", 640, 160, 0, max_iter),
-        Task(" task4 ", 1280, 310, 0, max_iter)
+        Task(" task1 ", 160, 40, 181, max_iter),
+        Task(" task2 ", 320, 60, 122, max_iter),
+        Task(" task3 ", 640, 80, 43, max_iter),
+        Task(" task4 ", 1280, 300, 4, max_iter)
     ]
 
     futas = {
@@ -126,7 +126,7 @@ if __name__ == '__main__':
     for name in plot.keys():
         print(name)
         for d in plot[name]:
-            print(f"{d[0] / 10}, {d[1] / 10 + 0.1}")
+            print(f"[{d[0] / 10}, {d[1] / 10 + 0.1}]", end=", ")
             v = [(d[0], cats[name] - .4),
                  (d[0], cats[name] + .4),
                  (d[1], cats[name] + .4),
@@ -134,6 +134,7 @@ if __name__ == '__main__':
                  (d[0], cats[name] - .4)]
             verts.append(v)
             colors.append(colormapping[name])
+        print()
     print("--------------------------------------")
 
     for task in tasks:
